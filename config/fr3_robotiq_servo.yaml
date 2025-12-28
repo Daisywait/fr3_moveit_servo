@@ -18,7 +18,7 @@ moveit_servo:
     scale:
       linear: 0.01      
       rotational: 0.01  
-      joint: 0.8        # 关节速度缩放
+      joint: 0.8        
 
     joint_names:
       - fr3_joint1
