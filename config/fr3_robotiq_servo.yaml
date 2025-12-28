@@ -5,11 +5,6 @@ moveit_servo:
     ee_frame_name: "robotiq_85_base_link"
     robot_link_command_frame: "fr3_link0"
 
-    # command_in_type: "speed_units"
-    # command_out_type: "std_msgs/Float64MultiArray"
-    # command_out_topic: "/fr3_velocity_controller/commands"
-
-
     command_in_type: "twist"
     command_out_type: "trajectory_msgs/JointTrajectory"
     command_out_topic: "/fr3_arm_controller/joint_trajectory"
@@ -17,21 +12,13 @@ moveit_servo:
     publish_period: 0.02
     low_latency_mode: false
     incoming_command_timeout: 0.1
-    
-
-    # publish_joint_positions: false
-    # publish_joint_velocities: true
-    # publish_joint_accelerations: false
 
     check_collisions: true
     collision_check_rate: 20.0
-    # lower_collision_proximity_threshold: 0.02
-    # hard_stop_collision_proximity_threshold: 0.005
-
-    linear_scale: 0.01
-    rotational_scale: 0.01
-    joint_scale: 0.8
-
+    scale:
+      linear: 0.01      
+      rotational: 0.01  
+      joint: 0.8        # 关节速度缩放
 
     joint_names:
       - fr3_joint1
