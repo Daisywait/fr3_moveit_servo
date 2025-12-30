@@ -153,13 +153,13 @@ def generate_launch_description():
             "low_pass_filter_coeff": 15.0,
             "incoming_command_timeout":1.0,
     
-            # "publish_period": 0.01,
+            "publish_period": 0.01,
 
-            # "linear_scale": 0.02,
-            # "rotational_scale": 0.05,
-            # "joint_scale": 0.05,
+            "linear_scale": 0.005,
+            "rotational_scale": 0.005,
+            "joint_scale": 0.02,
 
-            "check_collisions": False,
+            # "check_collisions": False,
         }
     }
 
@@ -175,6 +175,7 @@ def generate_launch_description():
             robot_description_semantic,
             robot_description_kinematics,
         ],
+        extra_arguments=[{'use_intra_process_comms' : True}],
     )
 
     return LaunchDescription([
