@@ -6,9 +6,11 @@ moveit_servo:
     robot_link_command_frame: "fr3_link0"
 
     command_in_type: "twist"
-    command_out_type: "trajectory_msgs/JointTrajectory"
-    command_out_topic: "/fr3_arm_controller/joint_trajectory"
-
+    # command_out_type: "trajectory_msgs/JointTrajectory"
+    # command_out_topic: "/fr3_arm_controller/joint_trajectory"
+    command_out_type: "std_msgs/Float64MultiArray"
+    command_out_topic: "/fr3_velocity_controller/commands"
+    
     publish_period: 0.02
     low_latency_mode: false
     incoming_command_timeout: 0.1
