@@ -11,7 +11,7 @@ moveit_servo:
     command_out_type: "std_msgs/Float64MultiArray"
     command_out_topic: "/fr3_velocity_controller/commands"
     
-    publish_period: 0.02
+    publish_period: 0.01  
     low_latency_mode: false
     incoming_command_timeout: 0.1
 
