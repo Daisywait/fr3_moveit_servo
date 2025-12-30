@@ -29,8 +29,8 @@ def generate_launch_description():
     
     # 将输出话题默认设置为速度控制器的话题
     #command_topic_default = "/fr3_arm_controller/joint_trajectory"
-    #command_topic_default = "/fr3_arm_controller/joint_trajectory"
-    command_topic_default = "/fr3_velocity_controller/commands"
+    command_topic_default = "/fr3_arm_controller/joint_trajectory"
+    #command_topic_default = "/fr3_velocity_controller/commands"
 
     command_topic_arg = DeclareLaunchArgument("command_out_topic", default_value=command_topic_default)
 
@@ -105,13 +105,13 @@ def generate_launch_description():
 
 
         # 速度控制器
-        Node(package="controller_manager", executable="spawner", arguments=["fr3_velocity_controller", "-c","/controller_manager","--activate"], output="screen"),
+        #Node(package="controller_manager", executable="spawner", arguments=["fr3_velocity_controller", "-c","/controller_manager","--activate"], output="screen"),
 
         #备选：
         #Node(package="controller_manager", executable="spawner", arguments=["fr3_position_controller", "-c", "/controller_manager", "--activate"], output="screen"),
 
         #轨迹控制器
-        #Node(package="controller_manager", executable="spawner", arguments=["fr3_arm_controller"], output="screen"),
+        Node(package="controller_manager", executable="spawner", arguments=["fr3_arm_controller"], output="screen"),
     ]
 
     # 真机才 spawn franka_robot_state_broadcaster
@@ -144,8 +144,8 @@ def generate_launch_description():
             
             # 【重点】覆盖 YAML 文件中的输出配置
             "command_out_topic": command_out_topic,
-            #"command_out_type": "trajectory_msgs/JointTrajectory", 
-            "command_out_type": "std_msgs/Float64MultiArray", 
+            "command_out_type": "trajectory_msgs/JointTrajectory", 
+            # "command_out_type": "std_msgs/Float64MultiArray", 
 
             
             "publish_joint_velocities": True,  
