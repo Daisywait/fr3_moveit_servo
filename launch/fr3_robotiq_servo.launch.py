@@ -150,7 +150,7 @@ def generate_launch_description():
             
             "publish_joint_velocities": True,  
             "publish_joint_positions": False,
-            "low_pass_filter_coeff": 10.0,
+            "low_pass_filter_coeff": 15.0,
             "incoming_command_timeout":1.0,
     
             # "publish_period": 0.01,
