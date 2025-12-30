@@ -175,7 +175,6 @@ def generate_launch_description():
             robot_description_semantic,
             robot_description_kinematics,
         ],
-        extra_arguments=[{'use_intra_process_comms' : True}],
     )
 
     return LaunchDescription([
