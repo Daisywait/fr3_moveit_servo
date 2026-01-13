@@ -131,7 +131,7 @@ def generate_launch_description():
         "config",
         "fr3_robotiq_servo.yaml",
     )
-    
+
     #强制重写 Servo 参数，确保输出话题和类型匹配速度控制器
     servo_override_params = {
         "moveit_servo": {
@@ -142,6 +142,9 @@ def generate_launch_description():
             "planning_frame":"fr3_link0",
             "robot_link_command_frame": "fr3_link0",
             
+
+            "cartesian_command_in_topic": "/moveit_servo/pose_target_cmds",
+            "command_in_type": "pose",  # 明确设为 "pose" 
             # 【重点】覆盖 YAML 文件中的输出配置
             "command_out_topic": command_out_topic,
             "command_out_type": "trajectory_msgs/JointTrajectory", 

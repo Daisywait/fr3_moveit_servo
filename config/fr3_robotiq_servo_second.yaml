@@ -1,4 +1,3 @@
-
 moveit_servo:
   ros__parameters:
     move_group_name: "fr3_arm"
@@ -6,22 +5,24 @@ moveit_servo:
     ee_frame_name: "robotiq_85_base_link"
     robot_link_command_frame: "fr3_link0"
 
-    command_in_type: "twist"
+    cartesian_command_in_topic: "/moveit_servo/pose_target_cmds"  # 修改这里！
+    
+    # 确保是"pose"模式
+    command_in_type: "pose" 
     command_out_type: "trajectory_msgs/JointTrajectory"
     command_out_topic: "/fr3_arm_controller/joint_trajectory"
-    # command_out_type: "std_msgs/Float64MultiArray"
-    # command_out_topic: "/fr3_velocity_controller/commands"
-    
-    publish_period: 0.01  
+
+    publish_period: 0.01
     low_latency_mode: false
-    incoming_command_timeout: 0.1
+    incoming_command_timeout: 0.2
 
     check_collisions: true
     collision_check_rate: 10.0
+
     scale:
-      linear: 0.5      
-      rotational: 0.5  
-      joint: 0.8        
+      linear: 0.6      # 调高一些
+      rotational: 0.3  # 调高一些
+      joint: 0.8
 
     joint_names:
       - fr3_joint1
@@ -33,4 +34,3 @@ moveit_servo:
       - fr3_joint7
 
     use_gazebo: false
-

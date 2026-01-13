@@ -131,38 +131,43 @@ def generate_launch_description():
         "config",
         "fr3_robotiq_servo.yaml",
     )
-    
-    #强制重写 Servo 参数，确保输出话题和类型匹配速度控制器
+ 
+# Force override Servo parameters
     servo_override_params = {
         "moveit_servo": {
-            # 核心参数
-            #"command_type": "differential",
+            # ========================= 核心修复 =========================
+            # 1. 告诉节点不要检查 Twist 类型，防止崩溃
+            "command_in_type": "unitless",
+
+            # 2. 【关键】强制指定 Pose 订阅话题！
+            # 只有加上这行，Subscription count 才会变成 1
+            "pose_command_in_topic": "/moveit_servo/pose_target_cmds",
+            
+            # 3. 将原来的 Cartesian (Twist) 话题移开，避免占位
+            "cartesian_command_in_topic": "/moveit_servo/delta_twist_cmds",
+            # ===========================================================
+
             "move_group_name": "fr3_arm",
             "ee_frame_name": "robotiq_85_base_link",
-            "planning_frame":"fr3_link0",
+            "planning_frame": "fr3_link0",
             "robot_link_command_frame": "fr3_link0",
-            
-            # 【重点】覆盖 YAML 文件中的输出配置
+
+            # 输出配置
             "command_out_topic": command_out_topic,
-            "command_out_type": "trajectory_msgs/JointTrajectory", 
-            # "command_out_type": "std_msgs/Float64MultiArray", 
+            "command_out_type": "trajectory_msgs/JointTrajectory",
 
-            
-            # "publish_joint_velocities": True,  
-            # "publish_joint_positions": False,
-            "low_pass_filter_coeff": 1.0,
-            "incoming_command_timeout":1.0,
-    
             "publish_period": 0.01,
+            "low_latency_mode": False,
+            "incoming_command_timeout": 1.0, # 宽容的时间戳
 
+            # 运动参数
             "linear_scale": 0.8,
             "rotational_scale": 0.5,
-            # "joint_scale": 0.02,
-
+            
+            # 碰撞检测 (建议调试时先关掉)
             "check_collisions": False,
         }
     }
-
     servo_node = Node(
         package="moveit_servo",
         executable="servo_node_main",
