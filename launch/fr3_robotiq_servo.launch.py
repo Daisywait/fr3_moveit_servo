@@ -22,13 +22,12 @@ def load_yaml(package_name, file_path):
         return None
 
 def generate_launch_description():
-    # ========= Launch 参数声明 (command_out_topic 默认指向速度控制器) =========
+    # ========= Launch 参数声明 =========
     robot_ip_arg = DeclareLaunchArgument("robot_ip", default_value="172.16.0.2")
     use_fake_hardware_arg = DeclareLaunchArgument("use_fake_hardware", default_value="false") # 默认设为 false
     fake_sensor_commands_arg = DeclareLaunchArgument("fake_sensor_commands", default_value="false")
     
-    # 将输出话题默认设置为速度控制器的话题
-    #command_topic_default = "/fr3_arm_controller/joint_trajectory"
+    
     command_topic_default = "/fr3_arm_controller/joint_trajectory"
     #command_topic_default = "/fr3_velocity_controller/commands"
 
@@ -96,7 +95,7 @@ def generate_launch_description():
         output="screen",
     )
 
-    # ========= 3. 控制器 Spawner (关键修改: 自动启动速度控制器) =========
+    # ========= 3. 控制器 Spawner=========
     spawners = [
         Node(package="controller_manager", executable="spawner", arguments=["joint_state_broadcaster"], output="screen"),
 
@@ -104,13 +103,10 @@ def generate_launch_description():
         Node(package="controller_manager", executable="spawner", arguments=["robotiq_gripper_controller"], output="screen"),
 
 
-        # 速度控制器
+        # 关节速度控制器
         #Node(package="controller_manager", executable="spawner", arguments=["fr3_velocity_controller", "-c","/controller_manager","--activate"], output="screen"),
 
-        #备选：
-        #Node(package="controller_manager", executable="spawner", arguments=["fr3_position_controller", "-c", "/controller_manager", "--activate"], output="screen"),
-
-        #轨迹控制器
+        #关节轨迹控制器
         Node(package="controller_manager", executable="spawner", arguments=["fr3_arm_controller"], output="screen"),
     ]
 
@@ -132,7 +128,7 @@ def generate_launch_description():
         "fr3_robotiq_servo.yaml",
     )
     
-    #强制重写 Servo 参数，确保输出话题和类型匹配速度控制器
+    #Servo 参数，
     servo_override_params = {
         "moveit_servo": {
             # 核心参数
@@ -142,7 +138,7 @@ def generate_launch_description():
             "planning_frame":"fr3_link0",
             "robot_link_command_frame": "fr3_link0",
             
-            # 【重点】覆盖 YAML 文件中的输出配置
+    
             "command_out_topic": command_out_topic,
             "command_out_type": "trajectory_msgs/JointTrajectory", 
             # "command_out_type": "std_msgs/Float64MultiArray", 
