@@ -18,7 +18,6 @@ START_SERVO_DELAY_SEC = 2.0
 
 MOVEIT_CONFIG_PACKAGE = "fr3_robotiq_moveit_config"
 ROBOT_DESCRIPTION_PACKAGE = "franka_description"
-SERVO_CONFIG_PACKAGE = "fr3_moveit_servo"
 
 CONTROL_MODE_DEFAULT = "trajectory"
 MOVE_GROUP_NAME_DEFAULT = "fr3_arm"
@@ -42,7 +41,6 @@ URDF_XACRO = "robots/fr3/fr3_robotiq.urdf.xacro"
 SRDF_XACRO = "robots/fr3/fr3_robotiq.srdf.xacro"
 KINEMATICS_YAML = "config/fr3_robotiq_kinematics.yaml"
 ROS2_CONTROLLERS_YAML = "config/fr3_robotiq_ros_controllers.yaml"
-SERVO_YAML = "config/fr3_robotiq_servo.yaml"
 
 def load_yaml(package_name, file_path):
     """从指定包中加载 YAML 文件内容"""
@@ -180,10 +178,6 @@ def _servo_node(
     scale_joint,
     condition,
 ):
-    servo_yaml_file = os.path.join(
-        get_package_share_directory(SERVO_CONFIG_PACKAGE),
-        SERVO_YAML,
-    )
     servo_overrides = {
         "moveit_servo": {
             "command_out_topic": command_out_topic,
@@ -207,7 +201,6 @@ def _servo_node(
         output="screen",
         condition=condition,
         parameters=[
-            servo_yaml_file,
             servo_overrides,
             robot_description,
             robot_description_semantic,

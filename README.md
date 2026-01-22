@@ -16,7 +16,7 @@
 ```
 fr3_moveit_servo/
 ├── config/
-│   └── fr3_robotiq_servo.yaml      # MoveIt Servo 配置文件
+│   └── (removed)                   # Servo 参数已内置在 launch 中
 ├── launch/
 │   └── fr3_robotiq_servo.launch.py # 主启动文件
 ├── CMakeLists.txt
@@ -37,7 +37,7 @@ fr3_moveit_servo/
 
 ## 配置文件说明
 
-### config/fr3_robotiq_servo.yaml
+### Servo 参数配置
 
 该文件包含了 MoveIt Servo 的核心配置参数：
 
@@ -82,7 +82,7 @@ fr3_moveit_servo/
 
 #### 3. 启动 MoveIt Servo 节点
 - 配置并启动 `moveit_servo` 节点
-- 加载 Servo 配置文件（`config/fr3_robotiq_servo.yaml`）
+- 通过 launch 参数配置 Servo（见下方示例）
 - 将机器人描述、语义描述和运动学配置传递给 Servo 节点
 
 #### 4. 提供灵活的启动参数
@@ -154,7 +154,7 @@ command_out_topic: "/fr3_arm_controller/joint_trajectory"
 
 ### 调整控制参数
 
-在 `config/fr3_robotiq_servo.yaml` 中可以调整：
+在 launch 参数中可以调整：
 
 - **缩放因子** (`scale`): 调整线速度、角速度和关节速度的缩放比例
 - **发布频率** (`publish_period`): 调整命令发布频率
