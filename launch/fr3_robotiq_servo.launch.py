@@ -14,7 +14,6 @@ from launch.conditions import UnlessCondition
 ROBOT_IP_DEFAULT = "172.16.0.2"
 USE_FAKE_HARDWARE_DEFAULT = "false"
 FAKE_SENSOR_COMMANDS_DEFAULT = "false"
-COMMAND_OUT_TOPIC_DEFAULT = "/fr3_arm_controller/joint_trajectory"
 START_SERVO_DELAY_SEC = 2.0
 
 MOVEIT_CONFIG_PACKAGE = "fr3_robotiq_moveit_config"
@@ -26,24 +25,6 @@ SRDF_XACRO = "robots/fr3/fr3_robotiq.srdf.xacro"
 KINEMATICS_YAML = "config/fr3_robotiq_kinematics.yaml"
 ROS2_CONTROLLERS_YAML = "config/fr3_robotiq_ros_controllers.yaml"
 SERVO_YAML = "config/fr3_robotiq_servo.yaml"
-
-SERVO_PARAMS = {
-    "moveit_servo": {
-        "move_group_name": "fr3_arm",
-        "ee_frame_name": "robotiq_85_base_link",
-        "planning_frame": "fr3_link0",
-        "robot_link_command_frame": "fr3_link0",
-        "command_out_topic": COMMAND_OUT_TOPIC_DEFAULT,
-        "command_out_type": "trajectory_msgs/JointTrajectory",
-        "joint_topic": "/joint_states",
-        "low_pass_filter_coeff": 1.0,
-        "incoming_command_timeout": 1.0,
-        "publish_period": 0.01,
-        "linear_scale": 0.8,
-        "rotational_scale": 0.5,
-        "check_collisions": False,
-    }
-}
 
 def load_yaml(package_name, file_path):
     """从指定包中加载 YAML 文件内容"""
@@ -158,7 +139,6 @@ def _servo_node(robot_description, robot_description_semantic, robot_description
         output="screen",
         parameters=[
             servo_yaml_file,
-            SERVO_PARAMS,
             robot_description,
             robot_description_semantic,
             robot_description_kinematics,

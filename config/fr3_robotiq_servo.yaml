@@ -12,8 +12,9 @@ moveit_servo:
     command_out_type: trajectory_msgs/JointTrajectory
     command_out_topic: /fr3_arm_controller/joint_trajectory
 
-    publish_period: 0.01
-    incoming_command_timeout: 0.1
+    publish_period: 0.001
+    incoming_command_timeout: 0.2
+    low_pass_filter_coeff: 0.3
     low_latency_mode: false
 
     check_collisions: true
