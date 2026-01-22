@@ -25,6 +25,10 @@ MOVE_GROUP_NAME_DEFAULT = "fr3_arm"
 PLANNING_FRAME_DEFAULT = "fr3_link0"
 ROBOT_LINK_COMMAND_FRAME_DEFAULT = "fr3_link0"
 EE_FRAME_NAME_DEFAULT = "robotiq_85_base_link"
+CHECK_COLLISIONS_DEFAULT = "false"
+SCALE_LINEAR_DEFAULT = "1.0"
+SCALE_ROTATIONAL_DEFAULT = "1.0"
+SCALE_JOINT_DEFAULT = "1.0"
 
 TRAJECTORY_ARM_CONTROLLER = "fr3_arm_controller"
 TRAJECTORY_COMMAND_OUT_TOPIC = "/fr3_arm_controller/joint_trajectory"
@@ -62,6 +66,10 @@ def _declare_launch_args():
             "robot_link_command_frame", default_value=ROBOT_LINK_COMMAND_FRAME_DEFAULT
         ),
         DeclareLaunchArgument("ee_frame_name", default_value=EE_FRAME_NAME_DEFAULT),
+        DeclareLaunchArgument("check_collisions", default_value=CHECK_COLLISIONS_DEFAULT),
+        DeclareLaunchArgument("scale_linear", default_value=SCALE_LINEAR_DEFAULT),
+        DeclareLaunchArgument("scale_rotational", default_value=SCALE_ROTATIONAL_DEFAULT),
+        DeclareLaunchArgument("scale_joint", default_value=SCALE_JOINT_DEFAULT),
     ]
 
 
@@ -166,6 +174,10 @@ def _servo_node(
     planning_frame,
     robot_link_command_frame,
     ee_frame_name,
+    check_collisions,
+    scale_linear,
+    scale_rotational,
+    scale_joint,
     condition,
 ):
     servo_yaml_file = os.path.join(
@@ -180,6 +192,12 @@ def _servo_node(
             "planning_frame": planning_frame,
             "robot_link_command_frame": robot_link_command_frame,
             "ee_frame_name": ee_frame_name,
+            "check_collisions": check_collisions,
+            "scale": {
+                "linear": scale_linear,
+                "rotational": scale_rotational,
+                "joint": scale_joint,
+            },
         }
     }
     return Node(
@@ -228,6 +246,10 @@ def generate_launch_description():
     planning_frame = LaunchConfiguration("planning_frame")
     robot_link_command_frame = LaunchConfiguration("robot_link_command_frame")
     ee_frame_name = LaunchConfiguration("ee_frame_name")
+    check_collisions = LaunchConfiguration("check_collisions")
+    scale_linear = LaunchConfiguration("scale_linear")
+    scale_rotational = LaunchConfiguration("scale_rotational")
+    scale_joint = LaunchConfiguration("scale_joint")
     trajectory_mode_condition = IfCondition(
         PythonExpression(["'", control_mode, "' == 'trajectory'"])
     )
@@ -254,6 +276,10 @@ def generate_launch_description():
         planning_frame,
         robot_link_command_frame,
         ee_frame_name,
+        check_collisions,
+        scale_linear,
+        scale_rotational,
+        scale_joint,
         trajectory_mode_condition,
     )
     servo_node_velocity = _servo_node(
@@ -266,6 +292,10 @@ def generate_launch_description():
         planning_frame,
         robot_link_command_frame,
         ee_frame_name,
+        check_collisions,
+        scale_linear,
+        scale_rotational,
+        scale_joint,
         velocity_mode_condition,
     )
     auto_start_servo = _auto_start_servo_action()
