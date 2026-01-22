@@ -22,6 +22,9 @@ SERVO_CONFIG_PACKAGE = "fr3_moveit_servo"
 
 CONTROL_MODE_DEFAULT = "trajectory"
 MOVE_GROUP_NAME_DEFAULT = "fr3_arm"
+PLANNING_FRAME_DEFAULT = "fr3_link0"
+ROBOT_LINK_COMMAND_FRAME_DEFAULT = "fr3_link0"
+EE_FRAME_NAME_DEFAULT = "robotiq_85_base_link"
 
 TRAJECTORY_ARM_CONTROLLER = "fr3_arm_controller"
 TRAJECTORY_COMMAND_OUT_TOPIC = "/fr3_arm_controller/joint_trajectory"
@@ -54,6 +57,11 @@ def _declare_launch_args():
         DeclareLaunchArgument("fake_sensor_commands", default_value=FAKE_SENSOR_COMMANDS_DEFAULT),
         DeclareLaunchArgument("control_mode", default_value=CONTROL_MODE_DEFAULT),
         DeclareLaunchArgument("move_group_name", default_value=MOVE_GROUP_NAME_DEFAULT),
+        DeclareLaunchArgument("planning_frame", default_value=PLANNING_FRAME_DEFAULT),
+        DeclareLaunchArgument(
+            "robot_link_command_frame", default_value=ROBOT_LINK_COMMAND_FRAME_DEFAULT
+        ),
+        DeclareLaunchArgument("ee_frame_name", default_value=EE_FRAME_NAME_DEFAULT),
     ]
 
 
@@ -155,6 +163,9 @@ def _servo_node(
     command_out_topic,
     command_out_type,
     move_group_name,
+    planning_frame,
+    robot_link_command_frame,
+    ee_frame_name,
     condition,
 ):
     servo_yaml_file = os.path.join(
@@ -166,6 +177,9 @@ def _servo_node(
             "command_out_topic": command_out_topic,
             "command_out_type": command_out_type,
             "move_group_name": move_group_name,
+            "planning_frame": planning_frame,
+            "robot_link_command_frame": robot_link_command_frame,
+            "ee_frame_name": ee_frame_name,
         }
     }
     return Node(
@@ -211,6 +225,9 @@ def generate_launch_description():
     fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
     control_mode = LaunchConfiguration("control_mode")
     move_group_name = LaunchConfiguration("move_group_name")
+    planning_frame = LaunchConfiguration("planning_frame")
+    robot_link_command_frame = LaunchConfiguration("robot_link_command_frame")
+    ee_frame_name = LaunchConfiguration("ee_frame_name")
     trajectory_mode_condition = IfCondition(
         PythonExpression(["'", control_mode, "' == 'trajectory'"])
     )
@@ -234,6 +251,9 @@ def generate_launch_description():
         TRAJECTORY_COMMAND_OUT_TOPIC,
         TRAJECTORY_COMMAND_OUT_TYPE,
         move_group_name,
+        planning_frame,
+        robot_link_command_frame,
+        ee_frame_name,
         trajectory_mode_condition,
     )
     servo_node_velocity = _servo_node(
@@ -243,6 +263,9 @@ def generate_launch_description():
         VELOCITY_COMMAND_OUT_TOPIC,
         VELOCITY_COMMAND_OUT_TYPE,
         move_group_name,
+        planning_frame,
+        robot_link_command_frame,
+        ee_frame_name,
         velocity_mode_condition,
     )
     auto_start_servo = _auto_start_servo_action()
