@@ -5,11 +5,45 @@ import os
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
 from launch.substitutions import LaunchConfiguration, Command, FindExecutable
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch.conditions import UnlessCondition
+
+ROBOT_IP_DEFAULT = "172.16.0.2"
+USE_FAKE_HARDWARE_DEFAULT = "false"
+FAKE_SENSOR_COMMANDS_DEFAULT = "false"
+COMMAND_OUT_TOPIC_DEFAULT = "/fr3_arm_controller/joint_trajectory"
+START_SERVO_DELAY_SEC = 2.0
+
+MOVEIT_CONFIG_PACKAGE = "fr3_robotiq_moveit_config"
+ROBOT_DESCRIPTION_PACKAGE = "franka_description"
+SERVO_CONFIG_PACKAGE = "fr3_moveit_servo"
+
+URDF_XACRO = "robots/fr3/fr3_robotiq.urdf.xacro"
+SRDF_XACRO = "robots/fr3/fr3_robotiq.srdf.xacro"
+KINEMATICS_YAML = "config/fr3_robotiq_kinematics.yaml"
+ROS2_CONTROLLERS_YAML = "config/fr3_robotiq_ros_controllers.yaml"
+SERVO_YAML = "config/fr3_robotiq_servo.yaml"
+
+SERVO_PARAMS = {
+    "moveit_servo": {
+        "move_group_name": "fr3_arm",
+        "ee_frame_name": "robotiq_85_base_link",
+        "planning_frame": "fr3_link0",
+        "robot_link_command_frame": "fr3_link0",
+        "command_out_topic": COMMAND_OUT_TOPIC_DEFAULT,
+        "command_out_type": "trajectory_msgs/JointTrajectory",
+        "joint_topic": "/joint_states",
+        "low_pass_filter_coeff": 1.0,
+        "incoming_command_timeout": 1.0,
+        "publish_period": 0.01,
+        "linear_scale": 0.8,
+        "rotational_scale": 0.5,
+        "check_collisions": False,
+    }
+}
 
 def load_yaml(package_name, file_path):
     """从指定包中加载 YAML 文件内容"""
@@ -21,168 +55,164 @@ def load_yaml(package_name, file_path):
     except EnvironmentError:
         return None
 
-def generate_launch_description():
-    # ========= Launch 参数声明 =========
-    robot_ip_arg = DeclareLaunchArgument("robot_ip", default_value="172.16.0.2")
-    use_fake_hardware_arg = DeclareLaunchArgument("use_fake_hardware", default_value="false") # 默认设为 false
-    fake_sensor_commands_arg = DeclareLaunchArgument("fake_sensor_commands", default_value="false")
-    
-    
-    command_topic_default = "/fr3_arm_controller/joint_trajectory"
-    #command_topic_default = "/fr3_velocity_controller/commands"
+def _declare_launch_args():
+    return [
+        DeclareLaunchArgument("robot_ip", default_value=ROBOT_IP_DEFAULT),
+        DeclareLaunchArgument("use_fake_hardware", default_value=USE_FAKE_HARDWARE_DEFAULT),
+        DeclareLaunchArgument("fake_sensor_commands", default_value=FAKE_SENSOR_COMMANDS_DEFAULT),
+    ]
 
-    command_topic_arg = DeclareLaunchArgument("command_out_topic", default_value=command_topic_default)
 
-    robot_ip = LaunchConfiguration("robot_ip")
-    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
-    command_out_topic = LaunchConfiguration("command_out_topic")
-    
-    new_moveit_package = "fr3_robotiq_moveit_config"
-    robot_description_package = "franka_description"
-    
-    # ========= 1. URDF/SRDF/Kinematics 加载 =========
-    
-    # URDF (robot_description)
-    fr3_urdf_xacro = os.path.join(
-        get_package_share_directory(robot_description_package),
-        "robots/fr3/fr3_robotiq.urdf.xacro"
+def _robot_description(robot_ip, use_fake_hardware, fake_sensor_commands):
+    urdf_xacro = os.path.join(
+        get_package_share_directory(ROBOT_DESCRIPTION_PACKAGE),
+        URDF_XACRO,
     )
-
     robot_description_cmd = Command([
         FindExecutable(name="xacro"), " ",
-        fr3_urdf_xacro,
+        urdf_xacro,
         " robot_ip:=", robot_ip,
         " use_fake_hardware:=", use_fake_hardware,
         " fake_sensor_commands:=", fake_sensor_commands,
     ])
+    return {"robot_description": ParameterValue(robot_description_cmd, value_type=str)}
 
-    robot_description = {"robot_description": ParameterValue(robot_description_cmd, value_type=str)}
 
-    # SRDF (robot_description_semantic)
-    fr3_srdf_xacro = os.path.join(
-        get_package_share_directory(robot_description_package),
-        "robots/fr3/fr3_robotiq.srdf.xacro"
+def _robot_description_semantic(use_fake_hardware):
+    srdf_xacro = os.path.join(
+        get_package_share_directory(ROBOT_DESCRIPTION_PACKAGE),
+        SRDF_XACRO,
     )
-    robot_description_semantic_cmd = Command([
+    semantic_cmd = Command([
         FindExecutable(name="xacro"), " ",
-        fr3_srdf_xacro,
+        srdf_xacro,
         " use_fake_hardware:=", use_fake_hardware,
     ])
-    robot_description_semantic = {"robot_description_semantic": ParameterValue(robot_description_semantic_cmd, value_type=str)}
+    return {"robot_description_semantic": ParameterValue(semantic_cmd, value_type=str)}
 
-    # Kinematics
-    kinematics_yaml = load_yaml(new_moveit_package, "config/fr3_robotiq_kinematics.yaml")
-    robot_description_kinematics = {"robot_description_kinematics": kinematics_yaml}
 
-    # ========= 2. ROS 2 Control 节点 =========
+def _robot_description_kinematics():
+    kinematics_yaml = load_yaml(MOVEIT_CONFIG_PACKAGE, KINEMATICS_YAML)
+    return {"robot_description_kinematics": kinematics_yaml}
+
+
+def _ros2_control_nodes(robot_description):
+    controllers_yaml = os.path.join(
+        get_package_share_directory(MOVEIT_CONFIG_PACKAGE),
+        ROS2_CONTROLLERS_YAML,
+    )
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         parameters=[robot_description],
     )
-
-    ros2_controllers_yaml = os.path.join(
-        get_package_share_directory(new_moveit_package),
-        "config",
-        "fr3_robotiq_ros_controllers.yaml",
-    )
-
     ros2_control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_description,ros2_controllers_yaml,],
+        parameters=[robot_description, controllers_yaml],
         output="screen",
     )
+    return robot_state_publisher_node, ros2_control_node
 
-    # ========= 3. 控制器 Spawner=========
+
+def _spawner_nodes(use_fake_hardware):
     spawners = [
-        Node(package="controller_manager", executable="spawner", arguments=["joint_state_broadcaster"], output="screen"),
-
-        # 启动夹爪控制器
-        Node(package="controller_manager", executable="spawner", arguments=["robotiq_gripper_controller"], output="screen"),
-
-
-        # 关节速度控制器
-        #Node(package="controller_manager", executable="spawner", arguments=["fr3_velocity_controller", "-c","/controller_manager","--activate"], output="screen"),
-
-        #关节轨迹控制器
-        Node(package="controller_manager", executable="spawner", arguments=["fr3_arm_controller"], output="screen"),
-    ]
-
-    # 真机才 spawn franka_robot_state_broadcaster
-    spawners.append(
+        Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["joint_state_broadcaster"],
+            output="screen",
+        ),
+        Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["robotiq_gripper_controller"],
+            output="screen",
+        ),
+        Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["fr3_arm_controller"],
+            output="screen",
+        ),
         Node(
             package="controller_manager",
             executable="spawner",
             arguments=["franka_robot_state_broadcaster"],
             condition=UnlessCondition(use_fake_hardware),
             output="screen",
-        )
-    )
+        ),
+    ]
+    return spawners
 
-    # ========= 4. MoveIt Servo 节点 (关键修改: 参数重写) =========
+
+def _servo_node(robot_description, robot_description_semantic, robot_description_kinematics):
     servo_yaml_file = os.path.join(
-        get_package_share_directory("fr3_moveit_servo"),
-        "config",
-        "fr3_robotiq_servo.yaml",
+        get_package_share_directory(SERVO_CONFIG_PACKAGE),
+        SERVO_YAML,
     )
-    
-    #Servo 参数，
-    servo_override_params = {
-        "moveit_servo": {
-            # 核心参数
-            #"command_type": "differential",
-            "move_group_name": "fr3_arm",
-            "ee_frame_name": "robotiq_85_base_link",
-            "planning_frame":"fr3_link0",
-            "robot_link_command_frame": "fr3_link0",
-            
-    
-            "command_out_topic": command_out_topic,
-            "command_out_type": "trajectory_msgs/JointTrajectory", 
-            # "command_out_type": "std_msgs/Float64MultiArray", 
-
-            
-            # "publish_joint_velocities": True,  
-            # "publish_joint_positions": False,
-            "low_pass_filter_coeff": 1.0,
-            "incoming_command_timeout":1.0,
-    
-            "publish_period": 0.01,
-
-            "linear_scale": 0.8,
-            "rotational_scale": 0.5,
-            # "joint_scale": 0.02,
-
-            "check_collisions": False,
-        }
-    }
-
-    servo_node = Node(
+    return Node(
         package="moveit_servo",
         executable="servo_node_main",
         name="moveit_servo",
         output="screen",
         parameters=[
             servo_yaml_file,
-            servo_override_params,
+            SERVO_PARAMS,
             robot_description,
             robot_description_semantic,
             robot_description_kinematics,
         ],
     )
 
+
+def _auto_start_servo_action():
+    return TimerAction(
+        period=START_SERVO_DELAY_SEC,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "service",
+                    "call",
+                    "/moveit_servo/start_servo",
+                    "std_srvs/srv/Trigger",
+                    "{}",
+                ],
+                output="screen",
+            )
+        ],
+    )
+
+
+def generate_launch_description():
+    launch_args = _declare_launch_args()
+
+    robot_ip = LaunchConfiguration("robot_ip")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
+
+    robot_description = _robot_description(
+        robot_ip,
+        use_fake_hardware,
+        fake_sensor_commands,
+    )
+    robot_description_semantic = _robot_description_semantic(use_fake_hardware)
+    robot_description_kinematics = _robot_description_kinematics()
+    robot_state_publisher_node, ros2_control_node = _ros2_control_nodes(robot_description)
+    spawners = _spawner_nodes(use_fake_hardware)
+    servo_node = _servo_node(
+        robot_description,
+        robot_description_semantic,
+        robot_description_kinematics,
+    )
+    auto_start_servo = _auto_start_servo_action()
+
     return LaunchDescription([
-        # 参数
-        robot_ip_arg,
-        use_fake_hardware_arg,
-        fake_sensor_commands_arg,
-        command_topic_arg,
-        
-        # 节点
+        *launch_args,
         robot_state_publisher_node,
         ros2_control_node,
         *spawners,
         servo_node,
+        auto_start_servo,
     ])

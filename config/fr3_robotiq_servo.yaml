@@ -1,27 +1,27 @@
-
 moveit_servo:
   ros__parameters:
-    move_group_name: "fr3_arm"
-    planning_frame: "fr3_link0"
-    ee_frame_name: "robotiq_85_base_link"
-    robot_link_command_frame: "fr3_link0"
+    move_group_name: fr3_arm
+    planning_frame: fr3_link0
+    ee_frame_name: robotiq_85_base_link
+    robot_link_command_frame: fr3_link0
 
-    command_in_type: "twist"
-    command_out_type: "trajectory_msgs/JointTrajectory"
-    command_out_topic: "/fr3_arm_controller/joint_trajectory"
-    # command_out_type: "std_msgs/Float64MultiArray"
-    # command_out_topic: "/fr3_velocity_controller/commands"
-    
-    publish_period: 0.01  
-    low_latency_mode: false
+    joint_topic: /joint_states
+
+    command_in_type: twist
+    cartesian_command_in_topic: /moveit_servo/delta_twist_cmds
+    command_out_type: trajectory_msgs/JointTrajectory
+    command_out_topic: /fr3_arm_controller/joint_trajectory
+
+    publish_period: 0.01
     incoming_command_timeout: 0.1
+    low_latency_mode: false
 
     check_collisions: true
     collision_check_rate: 10.0
     scale:
-      linear: 0.5      
-      rotational: 0.5  
-      joint: 0.8        
+      linear: 0.5
+      rotational: 0.5
+      joint: 0.8
 
     joint_names:
       - fr3_joint1
@@ -33,4 +33,3 @@ moveit_servo:
       - fr3_joint7
 
     use_gazebo: false
-
