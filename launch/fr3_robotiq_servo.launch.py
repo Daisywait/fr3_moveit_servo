@@ -21,6 +21,7 @@ ROBOT_DESCRIPTION_PACKAGE = "franka_description"
 SERVO_CONFIG_PACKAGE = "fr3_moveit_servo"
 
 CONTROL_MODE_DEFAULT = "trajectory"
+MOVE_GROUP_NAME_DEFAULT = "fr3_arm"
 
 TRAJECTORY_ARM_CONTROLLER = "fr3_arm_controller"
 TRAJECTORY_COMMAND_OUT_TOPIC = "/fr3_arm_controller/joint_trajectory"
@@ -52,6 +53,7 @@ def _declare_launch_args():
         DeclareLaunchArgument("use_fake_hardware", default_value=USE_FAKE_HARDWARE_DEFAULT),
         DeclareLaunchArgument("fake_sensor_commands", default_value=FAKE_SENSOR_COMMANDS_DEFAULT),
         DeclareLaunchArgument("control_mode", default_value=CONTROL_MODE_DEFAULT),
+        DeclareLaunchArgument("move_group_name", default_value=MOVE_GROUP_NAME_DEFAULT),
     ]
 
 
@@ -152,6 +154,7 @@ def _servo_node(
     robot_description_kinematics,
     command_out_topic,
     command_out_type,
+    move_group_name,
     condition,
 ):
     servo_yaml_file = os.path.join(
@@ -162,6 +165,7 @@ def _servo_node(
         "moveit_servo": {
             "command_out_topic": command_out_topic,
             "command_out_type": command_out_type,
+            "move_group_name": move_group_name,
         }
     }
     return Node(
@@ -206,6 +210,7 @@ def generate_launch_description():
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
     control_mode = LaunchConfiguration("control_mode")
+    move_group_name = LaunchConfiguration("move_group_name")
     trajectory_mode_condition = IfCondition(
         PythonExpression(["'", control_mode, "' == 'trajectory'"])
     )
@@ -228,6 +233,7 @@ def generate_launch_description():
         robot_description_kinematics,
         TRAJECTORY_COMMAND_OUT_TOPIC,
         TRAJECTORY_COMMAND_OUT_TYPE,
+        move_group_name,
         trajectory_mode_condition,
     )
     servo_node_velocity = _servo_node(
@@ -236,6 +242,7 @@ def generate_launch_description():
         robot_description_kinematics,
         VELOCITY_COMMAND_OUT_TOPIC,
         VELOCITY_COMMAND_OUT_TYPE,
+        move_group_name,
         velocity_mode_condition,
     )
     auto_start_servo = _auto_start_servo_action()
