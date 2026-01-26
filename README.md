@@ -18,7 +18,8 @@ fr3_moveit_servo/
 ├── config/
 │   └── (removed)                   # Servo 参数已内置在 launch 中
 ├── launch/
-│   └── fr3_robotiq_servo.launch.py # 主启动文件
+│   ├── fr3_robotiq_servo.launch.py # 主启动文件（twist 伺服）
+│   └── fr3_robotiq_servo_pose.launch.py # 位置/姿态伺服（pose tracking）
 ├── CMakeLists.txt
 ├── package.xml
 └── README.md
@@ -93,6 +94,20 @@ fr3_moveit_servo/
 
 **总结**：启动文件将机器人模型加载、控制器启动、MoveIt Servo 启动等多个步骤整合在一起，使得整个系统可以通过一条命令启动并运行，大大简化了使用流程。
 
+### launch/fr3_robotiq_servo_pose.launch.py
+
+该启动文件用于**位置/姿态伺服（pose tracking）**，适合直接发送 `PoseStamped` 目标的控制方式（例如 VR/HMD 目标位姿）。
+
+#### 关键特点
+- **输入类型**：订阅 `pose_target` 类的位姿目标（示例：`/moveit_servo/pose_target_cmds`）。
+- **内部控制**：MoveIt Servo 内置 PID 对位姿误差进行调节。
+- **输出类型**：仍然输出 `trajectory_msgs/JointTrajectory` 到 `fr3_arm_controller`。
+- **配置来源**：PID 参数来自系统安装的 `moveit_servo/config/pose_tracking_settings.yaml`。
+
+#### 适用场景
+- 直接给定末端目标位姿（例如 VR 控制器、手柄或视觉跟踪）。
+- 希望由 Servo 自动完成位姿追踪，而不是发送速度/位移增量。
+
 ## 使用方法
 
 ### 1. 编译功能包
@@ -117,6 +132,18 @@ ros2 launch fr3_moveit_servo fr3_robotiq_servo.launch.py robot_ip:=172.16.0.2
 
 ```bash
 ros2 launch fr3_moveit_servo fr3_robotiq_servo.launch.py use_fake_hardware:=true
+```
+
+#### 使用位置/姿态伺服（Pose Tracking）
+
+```bash
+ros2 launch fr3_moveit_servo fr3_robotiq_servo_pose.launch.py
+```
+
+如需真机：
+
+```bash
+ros2 launch fr3_moveit_servo fr3_robotiq_servo_pose.launch.py robot_ip:=172.16.0.2
 ```
 
 ### 3. 启动参数
