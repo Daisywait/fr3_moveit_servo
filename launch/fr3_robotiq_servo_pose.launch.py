@@ -228,7 +228,7 @@ def _pose_tracking_node(
     pose_tracking_params = _merge_servo_params(_pose_tracking_settings(), servo_overrides)
     return Node(
         package="moveit_servo",
-        executable="servo_pose_tracking_demo",
+        executable="servo_node_main",
         name="moveit_servo",
         output="screen",
         parameters=[
