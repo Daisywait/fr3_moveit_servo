@@ -3,12 +3,10 @@ project(fr3_moveit_servo)
 
 find_package(ament_cmake REQUIRED)
 
-# 只是装 launch 和 config，不需要编译代码
+# 安装 launch 和 config
 install(
   DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
 
-
 ament_package()
-
