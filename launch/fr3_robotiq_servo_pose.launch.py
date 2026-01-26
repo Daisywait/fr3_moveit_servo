@@ -152,8 +152,6 @@ def _spawner_nodes(use_fake_hardware):
 
 
 def _servo_overrides(
-    command_in_type,
-    command_in_topic,
     command_out_topic,
     command_out_type,
     move_group_name,
@@ -167,8 +165,6 @@ def _servo_overrides(
 ):
     return {
         "moveit_servo": {
-            "command_in_type": command_in_type,
-            "command_in_topic": command_in_topic,
             "command_out_topic": command_out_topic,
             "command_out_type": command_out_type,
             "move_group_name": move_group_name,
@@ -206,8 +202,6 @@ def _pose_tracking_node(
     robot_description,
     robot_description_semantic,
     robot_description_kinematics,
-    command_in_type,
-    command_in_topic,
     command_out_topic,
     command_out_type,
     move_group_name,
@@ -220,8 +214,6 @@ def _pose_tracking_node(
     scale_joint,
 ):
     servo_overrides = _servo_overrides(
-        command_in_type,
-        command_in_topic,
         command_out_topic,
         command_out_type,
         move_group_name,
@@ -236,7 +228,7 @@ def _pose_tracking_node(
     pose_tracking_params = _merge_servo_params(_pose_tracking_settings(), servo_overrides)
     return Node(
         package="moveit_servo",
-        executable="servo_node_main",
+        executable="servo_pose_tracking_demo",
         name="moveit_servo",
         output="screen",
         parameters=[
@@ -295,8 +287,6 @@ def generate_launch_description():
         robot_description,
         robot_description_semantic,
         robot_description_kinematics,
-        "pose",
-        "/moveit_servo/pose_target_cmds",
         TRAJECTORY_COMMAND_OUT_TOPIC,
         TRAJECTORY_COMMAND_OUT_TYPE,
         move_group_name,
