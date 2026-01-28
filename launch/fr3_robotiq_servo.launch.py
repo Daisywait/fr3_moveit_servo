@@ -181,6 +181,19 @@ def _servo_node(
             "rotational": scale_rotational,
             "joint": scale_joint,
         },
+        # Also provide dotted keys expected by MoveIt Servo.
+        "moveit_servo.command_in_type": "speed_units",
+        "moveit_servo.cartesian_command_in_topic": "/moveit_servo/delta_twist_cmds",
+        "moveit_servo.command_out_topic": command_out_topic,
+        "moveit_servo.command_out_type": command_out_type,
+        "moveit_servo.move_group_name": move_group_name,
+        "moveit_servo.planning_frame": planning_frame,
+        "moveit_servo.robot_link_command_frame": robot_link_command_frame,
+        "moveit_servo.ee_frame_name": ee_frame_name,
+        "moveit_servo.check_collisions": check_collisions,
+        "moveit_servo.scale.linear": scale_linear,
+        "moveit_servo.scale.rotational": scale_rotational,
+        "moveit_servo.scale.joint": scale_joint,
     }
     return Node(
         package="moveit_servo",
