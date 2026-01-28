@@ -6,10 +6,10 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
-from launch.substitutions import LaunchConfiguration, Command, FindExecutable, PythonExpression
+from launch.substitutions import LaunchConfiguration, Command, FindExecutable
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import UnlessCondition
 
 ROBOT_IP_DEFAULT = "172.16.0.2"
 USE_FAKE_HARDWARE_DEFAULT = "false"
@@ -19,7 +19,6 @@ START_SERVO_DELAY_SEC = 2.0
 MOVEIT_CONFIG_PACKAGE = "fr3_robotiq_moveit_config"
 ROBOT_DESCRIPTION_PACKAGE = "franka_description"
 
-CONTROL_MODE_DEFAULT = "trajectory"
 MOVE_GROUP_NAME_DEFAULT = "fr3_arm"
 PLANNING_FRAME_DEFAULT = "fr3_link0"
 ROBOT_LINK_COMMAND_FRAME_DEFAULT = "fr3_link0"
@@ -33,9 +32,6 @@ TRAJECTORY_ARM_CONTROLLER = "fr3_arm_controller"
 TRAJECTORY_COMMAND_OUT_TOPIC = "/fr3_arm_controller/joint_trajectory"
 TRAJECTORY_COMMAND_OUT_TYPE = "trajectory_msgs/JointTrajectory"
 
-VELOCITY_ARM_CONTROLLER = "fr3_velocity_controller"
-VELOCITY_COMMAND_OUT_TOPIC = "/fr3_velocity_controller/commands"
-VELOCITY_COMMAND_OUT_TYPE = "std_msgs/Float64MultiArray"
 
 URDF_XACRO = "robots/fr3/fr3_robotiq.urdf.xacro"
 SRDF_XACRO = "robots/fr3/fr3_robotiq.srdf.xacro"
@@ -57,7 +53,6 @@ def _declare_launch_args():
         DeclareLaunchArgument("robot_ip", default_value=ROBOT_IP_DEFAULT),
         DeclareLaunchArgument("use_fake_hardware", default_value=USE_FAKE_HARDWARE_DEFAULT),
         DeclareLaunchArgument("fake_sensor_commands", default_value=FAKE_SENSOR_COMMANDS_DEFAULT),
-        DeclareLaunchArgument("control_mode", default_value=CONTROL_MODE_DEFAULT),
         DeclareLaunchArgument("move_group_name", default_value=MOVE_GROUP_NAME_DEFAULT),
         DeclareLaunchArgument("planning_frame", default_value=PLANNING_FRAME_DEFAULT),
         DeclareLaunchArgument(
@@ -123,7 +118,7 @@ def _ros2_control_nodes(robot_description):
     return robot_state_publisher_node, ros2_control_node
 
 
-def _spawner_nodes(use_fake_hardware, trajectory_mode_condition, velocity_mode_condition):
+def _spawner_nodes(use_fake_hardware):
     spawners = [
         Node(
             package="controller_manager",
@@ -141,14 +136,6 @@ def _spawner_nodes(use_fake_hardware, trajectory_mode_condition, velocity_mode_c
             package="controller_manager",
             executable="spawner",
             arguments=[TRAJECTORY_ARM_CONTROLLER],
-            condition=trajectory_mode_condition,
-            output="screen",
-        ),
-        Node(
-            package="controller_manager",
-            executable="spawner",
-            arguments=[VELOCITY_ARM_CONTROLLER],
-            condition=velocity_mode_condition,
             output="screen",
         ),
         Node(
@@ -167,6 +154,7 @@ def _servo_node(
     robot_description_semantic,
     robot_description_kinematics,
     command_out_topic,
+    node_name,
     command_out_type,
     move_group_name,
     planning_frame,
@@ -176,30 +164,29 @@ def _servo_node(
     scale_linear,
     scale_rotational,
     scale_joint,
-    condition,
 ):
     servo_overrides = {
-        "moveit_servo": {
-            "command_out_topic": command_out_topic,
-            "command_out_type": command_out_type,
-            "move_group_name": move_group_name,
-            "planning_frame": planning_frame,
-            "robot_link_command_frame": robot_link_command_frame,
-            "ee_frame_name": ee_frame_name,
-            "check_collisions": check_collisions,
-            "scale": {
-                "linear": scale_linear,
-                "rotational": scale_rotational,
-                "joint": scale_joint,
-            },
-        }
+        # Keep parameters flat so they are applied directly to this node.
+        "command_in_type": "speed_units",
+        "cartesian_command_in_topic": "/moveit_servo/delta_twist_cmds",
+        "command_out_topic": command_out_topic,
+        "command_out_type": command_out_type,
+        "move_group_name": move_group_name,
+        "planning_frame": planning_frame,
+        "robot_link_command_frame": robot_link_command_frame,
+        "ee_frame_name": ee_frame_name,
+        "check_collisions": check_collisions,
+        "scale": {
+            "linear": scale_linear,
+            "rotational": scale_rotational,
+            "joint": scale_joint,
+        },
     }
     return Node(
         package="moveit_servo",
         executable="servo_node",
-        name="moveit_servo",
+        name=node_name,
         output="screen",
-        condition=condition,
         parameters=[
             servo_overrides,
             robot_description,
@@ -209,7 +196,7 @@ def _servo_node(
     )
 
 
-def _auto_start_servo_action():
+def _auto_start_servo_action(service_name):
     return TimerAction(
         period=START_SERVO_DELAY_SEC,
         actions=[
@@ -218,7 +205,7 @@ def _auto_start_servo_action():
                     "ros2",
                     "service",
                     "call",
-                    "/moveit_servo/start_servo",
+                    service_name,
                     "std_srvs/srv/Trigger",
                     "{}",
                 ],
@@ -234,7 +221,6 @@ def generate_launch_description():
     robot_ip = LaunchConfiguration("robot_ip")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
-    control_mode = LaunchConfiguration("control_mode")
     move_group_name = LaunchConfiguration("move_group_name")
     planning_frame = LaunchConfiguration("planning_frame")
     robot_link_command_frame = LaunchConfiguration("robot_link_command_frame")
@@ -243,13 +229,6 @@ def generate_launch_description():
     scale_linear = LaunchConfiguration("scale_linear")
     scale_rotational = LaunchConfiguration("scale_rotational")
     scale_joint = LaunchConfiguration("scale_joint")
-    trajectory_mode_condition = IfCondition(
-        PythonExpression(["'", control_mode, "' == 'trajectory'"])
-    )
-    velocity_mode_condition = IfCondition(
-        PythonExpression(["'", control_mode, "' == 'velocity'"])
-    )
-
     robot_description = _robot_description(
         robot_ip,
         use_fake_hardware,
@@ -258,12 +237,13 @@ def generate_launch_description():
     robot_description_semantic = _robot_description_semantic(use_fake_hardware)
     robot_description_kinematics = _robot_description_kinematics()
     robot_state_publisher_node, ros2_control_node = _ros2_control_nodes(robot_description)
-    spawners = _spawner_nodes(use_fake_hardware, trajectory_mode_condition, velocity_mode_condition)
+    spawners = _spawner_nodes(use_fake_hardware)
     servo_node_trajectory = _servo_node(
         robot_description,
         robot_description_semantic,
         robot_description_kinematics,
         TRAJECTORY_COMMAND_OUT_TOPIC,
+        "moveit_servo_trajectory",
         TRAJECTORY_COMMAND_OUT_TYPE,
         move_group_name,
         planning_frame,
@@ -273,25 +253,10 @@ def generate_launch_description():
         scale_linear,
         scale_rotational,
         scale_joint,
-        trajectory_mode_condition,
     )
-    servo_node_velocity = _servo_node(
-        robot_description,
-        robot_description_semantic,
-        robot_description_kinematics,
-        VELOCITY_COMMAND_OUT_TOPIC,
-        VELOCITY_COMMAND_OUT_TYPE,
-        move_group_name,
-        planning_frame,
-        robot_link_command_frame,
-        ee_frame_name,
-        check_collisions,
-        scale_linear,
-        scale_rotational,
-        scale_joint,
-        velocity_mode_condition,
+    auto_start_servo_trajectory = _auto_start_servo_action(
+        "/moveit_servo_trajectory/start_servo"
     )
-    auto_start_servo = _auto_start_servo_action()
 
     return LaunchDescription([
         *launch_args,
@@ -299,6 +264,5 @@ def generate_launch_description():
         ros2_control_node,
         *spawners,
         servo_node_trajectory,
-        servo_node_velocity,
-        auto_start_servo,
+        auto_start_servo_trajectory,
     ])
