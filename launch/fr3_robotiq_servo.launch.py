@@ -256,7 +256,7 @@ def generate_launch_description():
         robot_description_semantic,
         robot_description_kinematics,
         TRAJECTORY_COMMAND_OUT_TOPIC,
-        "moveit_servo",
+        "moveit_servo_node",
         TRAJECTORY_COMMAND_OUT_TYPE,
         move_group_name,
         planning_frame,
@@ -268,7 +268,7 @@ def generate_launch_description():
         scale_joint,
     )
     auto_start_servo_trajectory = _auto_start_servo_action(
-        "/moveit_servo/start_servo"
+        "/moveit_servo_node/start_servo"
     )
 
     return LaunchDescription([
