@@ -15,6 +15,7 @@ ROBOT_IP_DEFAULT = "172.16.0.2"
 USE_FAKE_HARDWARE_DEFAULT = "false"
 FAKE_SENSOR_COMMANDS_DEFAULT = "false"
 START_SERVO_DELAY_SEC = 2.0
+SET_COMMAND_TYPE_DELAY_SEC = 2.5
 
 MOVEIT_CONFIG_PACKAGE = "fr3_robotiq_moveit_config"
 ROBOT_DESCRIPTION_PACKAGE = "franka_description"
@@ -228,6 +229,25 @@ def _auto_start_servo_action(service_name):
     )
 
 
+def _auto_set_command_type(service_name, command_type):
+    return TimerAction(
+        period=SET_COMMAND_TYPE_DELAY_SEC,
+        actions=[
+            ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "service",
+                    "call",
+                    service_name,
+                    "moveit_msgs/srv/ServoCommandType",
+                    f"{{command_type: {command_type}}}",
+                ],
+                output="screen",
+            )
+        ],
+    )
+
+
 def generate_launch_description():
     launch_args = _declare_launch_args()
 
@@ -256,7 +276,7 @@ def generate_launch_description():
         robot_description_semantic,
         robot_description_kinematics,
         TRAJECTORY_COMMAND_OUT_TOPIC,
-        "moveit_servo_node",
+        "servo_node",
         TRAJECTORY_COMMAND_OUT_TYPE,
         move_group_name,
         planning_frame,
@@ -268,7 +288,11 @@ def generate_launch_description():
         scale_joint,
     )
     auto_start_servo_trajectory = _auto_start_servo_action(
-        "/moveit_servo_node/start_servo"
+        "/servo_node/start_servo"
+    )
+    auto_set_servo_command_type = _auto_set_command_type(
+        "/servo_node/switch_command_type",
+        1,
     )
 
     return LaunchDescription([
@@ -278,4 +302,5 @@ def generate_launch_description():
         *spawners,
         servo_node_trajectory,
         auto_start_servo_trajectory,
+        auto_set_servo_command_type,
     ])
